@@ -27,16 +27,41 @@ class Circuit():
                 self.__add_node(pin)
 
     def __add_node(self, pin :object):
-        self.nodes.append( Node(pin, len(self.nodes +1))  )
+        newNode = Node(pin, len(self.nodes )+1)
+        self.nodes.append( newNode )
         pin.isNode = True
+        pin.define_node(newNode)
+    
+    def exixting_branch(self, branch):
+        for i in range(len(self.branches)):
+            if self.branches[i].compare_branches(branch):
+                return True
+        return False
+            
 
     def define_branches(self):
         if len(self.nodes) == 0:
             pass #Se hace solo una rama que recorre todo el ciruito
 
         for node in self.nodes:
-            for conection in node.components:
-                conection.pin1
+            components = [] #Guarda componentes de la rama
+            for rama in node.components: #rama es un componente que sirve como dirección de branch
+                components.append(rama)
+                next : Pin = rama.next_pin(node.pin) #next es el siguiente pin
+                
+                while not next.isNode:
+                    nextComponent : Component = next.next_component(components[-1])# Si next no es Nodo, se pide el componente al que está conectado, y luego el otro pin del componente, se repite
+                    components.append(nextComponent)
+
+                    next = nextComponent.next_pin(next)
+                #Cuando se encuentre otro nodo:
+                newBranch = Branch(node, next.node, components)
+                components = []
+                if not self.exixting_branch(newBranch):
+                    self.branches.append(newBranch)
+                
+
+                
 
 
 circuit = Circuit()
@@ -49,6 +74,17 @@ class Pin():
 
     def add_component(self, component):
         self.components.append(component)
+    
+    def define_node(self, node):
+        self.node = node
+
+    def next_component(self, component):
+        if component == self.components[0]:
+            return self.components[1]
+        if component == self.components[1]:
+            return self.components[0]
+        else:
+            return None
 
 
 
@@ -57,6 +93,7 @@ class Pin():
 class Node():
     def __init__(self, pin, number) -> None:
         self.pin = pin
+        pin.define_node(self)
         self.number = number
         self.components = pin.components
 
@@ -67,9 +104,9 @@ class Node():
 
 
 class Branch():
-    def __init__(self) -> None:
-        self.components = []
-        self.nodes = [] #extremos
+    def __init__(self, node1, node2, components:list) -> None:
+        self.components = components
+        self.nodes = [node1, node2] #extremos
         #self.current = self.get_current()
         #self.resistance = self.get_resistance()
 
@@ -78,6 +115,13 @@ class Branch():
 
     def get_current(self):
         pass
+
+    def compare_branches(self, branch):
+        s = False
+        #s = s or self.nodes[0] == branch.nodes[0] and self.nodes[1] == branch.nodes[1] # Esta no porque existen ramas con el mismo inicio y final pero diferentes componentes
+        s = s or self.nodes[0] == branch.nodes[1] and self.nodes[1] == branch.nodes[0]
+        return s
+
 
     def get_resistance(self):
         comp = self.components
@@ -108,14 +152,20 @@ class Component():
 
         self.pin2 = circuit.add_pin(pin2)
         self.pin2.add_component(self)
+
+        self.pines = [self.pin1, self.pin2]
     
-    def get_other_pin(self, pin):
+    def next_pin(self, pin) -> Pin:
         if pin == self.pin1:
             return self.pin2
         if pin == self.pin2:
             return self.pin1
         else:
-            return None
+            print(self)
+            print(pin.number, pin)
+            print(self.pin1.number, self.pin1)
+            print(self.pin2.number, self.pin2)
+
 
 
     def __str__(self) -> str:
@@ -130,12 +180,18 @@ def read_circuit(txt, circuit=circuit):
         circuit.add_component(*matrix[i])
 
 #Type, value, pin1, pin2
-texto = """V 12 1 0
-R 1 1 2
-R 2 2 0"""
+texto = """I 2 1 0
+R 1 1 0
+R 2 2 1
+R 3 2 0"""
 read_circuit(texto)
+
+circuit.define_nodes()
+print(circuit.nodes)
+circuit.define_branches()
 
 
 print("\n".join(str(x)for x in circuit.components))
-
+print(circuit.branches)
+print(len(circuit.branches))
 
