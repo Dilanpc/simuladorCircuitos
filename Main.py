@@ -86,6 +86,8 @@ class Pin():
         else:
             return None
 
+    def __str__(self) -> str:
+        return "P" + str(self.number)
 
 
 
@@ -96,6 +98,7 @@ class Node():
         pin.define_node(self)
         self.number = number
         self.components = pin.components
+        self.isGND = (True if number == 0 else False)
 
     def add_component(self, component):
         self.pin.add_component(component)
@@ -196,6 +199,6 @@ circuit.define_branches()
 
 
 print("\n".join(str(x)for x in circuit.components))
-print([str(x) for x in circuit.branches])
+print([str(x) for x in circuit.pines])
 print(len(circuit.branches))
 
