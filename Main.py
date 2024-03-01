@@ -18,16 +18,27 @@ class Circuit():
         return newPin
     
     def add_component(self, type:str, value:float, pin1:int, pin2:int):
+        type = str(type)
+        value = float(value)
+        pin1 = int(pin1)
+        pin2 = int(pin2)
         newComponent = Component(type, value, pin1, pin2)
         self.components.append( newComponent)
 
     def define_nodes(self):
+        for pin in self.pines: #Polo a tierra
+            if pin.number == 0:
+                newNode = Node(pin, 0)
+                self.nodes.append( newNode )
+                pin.isNode = True
+                pin.define_node(newNode)
+                
         for pin in self.pines:
-            if len(pin.components) >= 3:
+            if len(pin.components) >= 3 and pin.number != 0:
                 self.__add_node(pin)
 
     def __add_node(self, pin :object):
-        newNode = Node(pin, len(self.nodes )+1)
+        newNode = Node(pin, len(self.nodes ))
         self.nodes.append( newNode )
         pin.isNode = True
         pin.define_node(newNode)
@@ -40,8 +51,8 @@ class Circuit():
             
 
     def define_branches(self):
-        if len(self.nodes) == 0:
-            pass #Se hace solo una rama que recorre todo el ciruito
+        if len(self.nodes) == 0 or len(self.nodes) == 1:
+            return 0 #Se hace solo una rama que recorre todo el ciruito
 
         for node in self.nodes:
             components = [] #Guarda componentes de la rama
@@ -111,7 +122,8 @@ class Branch():
     def __init__(self, node1, node2, components:list, number:int) -> None:
         self.components = components
         self.number = number
-        self.nodes = [node1, node2] #extremos
+        self.nodes = [node1, node2]
+        self.ends = (node1.number, node2.number)
         #self.current = self.get_current()
         #self.resistance = self.get_resistance()
 
