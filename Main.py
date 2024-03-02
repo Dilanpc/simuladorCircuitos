@@ -4,13 +4,8 @@ import numpy as np
 class Circuit():
     def __init__(self) -> None:
         self.components: list = []
-        self.pines: list = []
-        self.nodes = []
+        self.nodes: list = []
         self.branches = []
-
-    def print_pines(self):
-        for i in range(len(circuit.pines)):
-            print("Pin", circuit.pines[i].number, [str(x) for x in circuit.pines[i].components])
 
     def print_branches(self):
         for branch in self.branches:
@@ -18,159 +13,101 @@ class Circuit():
     
     def print_nodes(self):
         for node in self.nodes:
-            print(node, "from pin", node.pin.number)
+            print(node, [str(x) for x in node.components])
 
-    def add_pin(self, number):
-        for i in range(len(self.pines)): #Busca si el pin ya está creado
-            if number == self.pines[i].number:
-                return self.pines[i]
+    def add_node(self, number):
+        for i in range(len(self.nodes)): #Busca si el nodo ya está creado
+            if number == self.nodes[i].number:
+                return self.nodes[i]
         
-        newPin = Pin(number)
-        self.pines.append( newPin)
-        return newPin
+        newNode = Node(number)
+        self.nodes.append( newNode)
+        return newNode
     
-    def add_component(self, type:str, value:float, pin1:int, pin2:int):
+    def add_branch(self, node1, node2):
+        newBranch = Branch(node1, node2, len(self.branches)+1)
+        self.branches.append(newBranch)
+        return newBranch
+    
+    def add_component(self, type:str, value:float, node1:int, node2:int):
         type = str(type)
         value = float(value)
-        pin1 = int(pin1)
-        pin2 = int(pin2)
-        newComponent = Component(type, value, pin1, pin2)
+        node1 = self.add_node(int(node1))
+        node2 = self.add_node(int(node2))
+        branch = self.add_branch(node1, node2)
+        if type == 'V':
+            newComponent = Vsourse(value, node1, node2, branch)
+        elif type == 'I':
+            newComponent = Csourse(value, node1, node2, branch)
+        elif type == 'R':
+            newComponent = Resistor(value, node1, node2, branch)
         self.components.append( newComponent)
 
-    def define_nodes(self):
-        for pin in self.pines: #Polo a tierra
-            if pin.number == 0:
-                newNode = Node(pin, 0)
-                self.nodes.append( newNode )
-                pin.isNode = True
-                pin.define_node(newNode)
-                
-        for pin in self.pines:
-            if len(pin.components) >= 3 and pin.number != 0:
-                self.__add_node(pin)
 
-    def __add_node(self, pin :object):
-        newNode = Node(pin, len(self.nodes )) #se especifica el número para que en el número del nodo no hayan saltos como N1 N4, porque P2, P3 no sería nodos
-        self.nodes.append( newNode )
-        pin.isNode = True
-        pin.define_node(newNode)
-    
-    def exixting_branch(self, branch):
-        for i in range(len(self.branches)):
-            if self.branches[i].compare_branches(branch):
-                return True
-        return False 
-
-    def define_branches(self):
-        if len(self.nodes) == 0 or len(self.nodes) == 1:
-            return 0 #Se hace solo una rama que recorre todo el ciruito
-
-        for node in self.nodes:
-            components = [] #Guarda componentes de la rama
-            for rama in node.components: #rama es un componente que sirve como dirección de branch
-                components.append(rama)
-                next : Pin = rama.next_pin(node.pin) #next es el siguiente pin
-                
-                while not next.isNode:
-                    nextComponent : Component = next.next_component(components[-1])# Si next no es Nodo, se pide el componente al que está conectado, y luego el otro pin del componente, se repite
-                    components.append(nextComponent)
-
-                    next = nextComponent.next_pin(next)
-                #Cuando se encuentre otro nodo:
-                newBranch = Branch(node, next.node, components, len(self.branches)+1)
-                components = []
-                if not self.exixting_branch(newBranch):
-                    self.branches.append(newBranch)
-                    node.add_branch(newBranch)
-                    next.node.add_branch(newBranch)
                 
     def get_incidence_matrix(self):
         pass
 
-    def __row_incidence(self, node):
+    def row_incidence(self, node):
         row = []
         for branch in self.branches:
             row.append(node.conected_branch(branch))
             
-        return row
+        return np.array(row)
 
 
 circuit = Circuit()
 
-class Pin():
+class Node():
     def __init__(self, number) -> None:
         self.components = []
         self.number = number
-        self.isNode = False
+        self.branches = []
 
     def add_component(self, component):
         self.components.append(component)
     
-    def define_node(self, node):
-        self.node = node
-
-    def next_component(self, component):
+    def next_component(self, component): #si solo tiene dos componentes
+        if len(self.components) != 2:
+            return None
         if component == self.components[0]:
             return self.components[1]
         if component == self.components[1]:
             return self.components[0]
         else:
             return None
-
-    def __str__(self) -> str:
-        return "P" + str(self.number)
-
-
-
-
-class Node():
-    def __init__(self, pin, number) -> None:
-        self.pin = pin
-        pin.define_node(self)
-        self.number = number
-        self.branches = []
-        self.components = pin.components
-        self.isGND = (True if number == 0 else False)
-
-    def add_component(self, component):
-        self.pin.add_component(component)
     
     def add_branch(self, branch):
         self.branches.append(branch)
-    
+
     def conected_branch(self, branch): #Retorna si una branch está o no conectada al nodo y su sentido. -1 saliendo, 1 entrando, 0 no conectada
+
         for conected in self.branches:
             if conected == branch:#Buscar si la rama está conectada
-                if branch.nodes[0] == self: #Si el nodo es el extremo de inicio
-                    return -1
-                else:
+                if branch.nodes[0] == self: #Si coincide con el primer nodo es positivo
                     return 1
+                else:
+                    return -1
         return 0
-
+                
     def __str__(self) -> str:
         return "N" + str(self.number)
 
 
+
+
 class Branch():
-    def __init__(self, node1, node2, components:list, number:int) -> None:
-        self.components = components
+    def __init__(self, node1, node2, number:int) -> None:
+        self.component = None
         self.number = number
         self.nodes = [node1, node2] #[0]=inicio, [1]=final
         self.ends = (node1.number, node2.number)
-        #self.current = self.get_current()
-        #self.resistance = self.get_resistance()
+        node1.add_branch(self)
+        node2.add_branch(self)
+
 
     def add_component(self, component):
-        self.components.append(component)
-
-    def get_current(self):
-        pass
-
-    def compare_branches(self, branch):
-        s = False
-        #s = s or self.nodes[0] == branch.nodes[0] and self.nodes[1] == branch.nodes[1] # Esta no porque existen ramas con el mismo inicio y final pero diferentes componentes
-        s = s or self.nodes[0] == branch.nodes[1] and self.nodes[1] == branch.nodes[0]
-        return s
+        self.components = component
 
     def __str__(self) -> str:
         return "r"+ str(self.number)
@@ -185,42 +122,67 @@ class Branch():
         return resis
 
 class Component():
-    def __init__(self, type:str, value:float, pin1:int, pin2:int, circuit=circuit) -> None:
-        self.type: str = type
-        self.value = value
+    def __init__(self, node1:Node, node2:Node, branch:Branch) -> None:
+        self.type: str = None
+        self.value = None
         self.tension = None
         self.current = None
         self.resistance = None
 
-        if self.type == 'V':
-            self.tension = value
-
-        elif self.type == 'I':
-            self.current = value
-        elif self.type == 'R':
-            self.resistance = value
-
     #Conections
-        self.pin1 = circuit.add_pin(pin1)
-        self.pin1.add_component(self)
+        self.node1 = node1
+        self.node2 = node2
 
-        self.pin2 = circuit.add_pin(pin2)
-        self.pin2.add_component(self)
+        self.nodes = [self.node1, self.node2]
 
-        self.pines = [self.pin1, self.pin2]
+        self.branch = branch
+        self.branch.component = self
     
-    def next_pin(self, pin) -> Pin:
-        if pin == self.pin1:
-            return self.pin2
-        if pin == self.pin2:
-            return self.pin1
+    def next_node(self, node) -> Node:
+        if node == self.node1:
+            return self.node2
+        if node == self.node2:
+            return self.node1
         else:
             return None
 
-
     def __str__(self) -> str:
-        return str(self.type) + " " + str(self.value) +" " + str(self.pin1.number)+ " " +str(self.pin2.number)
+        return str(self.type) + " " + str(self.value) +" " + str(self.node1.number)+ " " +str(self.node2.number)
         
+
+class Vsourse(Component):
+    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(node1, node2, branch)
+        self.type = 'V'
+        self.value = value
+        self.tension = value
+
+        node1.add_component(self)
+        node2.add_component(self)
+
+
+
+class Csourse(Component):
+    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(node1, node2, branch)
+        self.type = 'I'
+        self.value = value
+        self.current = value
+
+        node1.add_component(self)
+        node2.add_component(self)    
+
+
+class Resistor(Component):
+    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(node1, node2, branch)
+        self.type = 'R'
+        self.value = value
+        self.resistance = value
+
+        node1.add_component(self)
+        node2.add_component(self)
+
 
 
 def read_circuit(txt, circuit=circuit):
@@ -236,15 +198,13 @@ R 2 2 0
 I 10 2 0"""
 read_circuit(texto)
 
-circuit.define_nodes()
 
-circuit.define_branches()
-
-print(circuit.pines)
-
-circuit.print_pines()
 
 
 circuit.print_branches()
 
 circuit.print_nodes()
+
+print(circuit.nodes[0])
+
+print(circuit.row_incidence(circuit.nodes[2]))
