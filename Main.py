@@ -7,9 +7,15 @@ class Circuit():
         self.nodes: list = []
         self.branches = []
 
+        self.incidence_matrix = None
+        self.lvk_matrix = None
+    
+    def calculate(self):
+        self.get_incidence_matrix()
+        self.get_lvk_matrix()
     def print_branches(self):
         for branch in self.branches:
-            print( "Branch", branch.number, [str(x) for x in branch.nodes]   )
+            print( "Branch", branch.number, [str(x) for x in branch.nodes], branch.component   )
     
     def print_nodes(self):
         for node in self.nodes:
@@ -46,13 +52,25 @@ class Circuit():
 
                 
     def get_incidence_matrix(self):
-        pass
+        matrix =[]
+        for node in self.nodes:
+            if node.number != 0:
+                matrix.append(self.row_incidence(node))
+        self.incidence_matrix = np.array(matrix)
+        return self.incidence_matrix
+
+    def get_lvk_matrix(self):
+        incidence = -1 * np.transpose(self.incidence_matrix)
+        identity = np.eye(len(incidence))
+        self.lvk_matrix = np.hstack([identity, incidence])
+        return self.lvk_matrix
+
 
     def row_incidence(self, node):
         row = []
         for branch in self.branches:
             row.append(node.conected_branch(branch))
-            
+        
         return np.array(row)
 
 
@@ -63,6 +81,8 @@ class Node():
         self.components = []
         self.number = number
         self.branches = []
+
+        self.tension = None
 
     def add_component(self, component):
         self.components.append(component)
@@ -193,18 +213,20 @@ def read_circuit(txt, circuit=circuit):
 
 #Type, value, pin1+, pin2-
 texto = """V 2 1 0
-R 1 1 2
-R 2 2 0
+R 1 2 1
+R 2 0 2
 I 10 2 0"""
 read_circuit(texto)
 
-
+circuit.calculate()
 
 
 circuit.print_branches()
 
 circuit.print_nodes()
 
-print(circuit.nodes[0])
+print("-----------------")
 
-print(circuit.row_incidence(circuit.nodes[2]))
+print(circuit.lvk_matrix)
+
+#print(np.hstack([circuit.incidence_matrix(), np.eye(2)]))
