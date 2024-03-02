@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 
 class Circuit():
@@ -7,6 +7,18 @@ class Circuit():
         self.pines: list = []
         self.nodes = []
         self.branches = []
+
+    def print_pines(self):
+        for i in range(len(circuit.pines)):
+            print("Pin", circuit.pines[i].number, [str(x) for x in circuit.pines[i].components])
+
+    def print_branches(self):
+        for branch in self.branches:
+            print( "Branch", branch.number, [str(x) for x in branch.nodes]   )
+    
+    def print_nodes(self):
+        for node in self.nodes:
+            print(node, "from pin", node.pin.number)
 
     def add_pin(self, number):
         for i in range(len(self.pines)): #Busca si el pin ya está creado
@@ -38,7 +50,7 @@ class Circuit():
                 self.__add_node(pin)
 
     def __add_node(self, pin :object):
-        newNode = Node(pin, len(self.nodes ))
+        newNode = Node(pin, len(self.nodes )) #se especifica el número para que en el número del nodo no hayan saltos como N1 N4, porque P2, P3 no sería nodos
         self.nodes.append( newNode )
         pin.isNode = True
         pin.define_node(newNode)
@@ -47,8 +59,7 @@ class Circuit():
         for i in range(len(self.branches)):
             if self.branches[i].compare_branches(branch):
                 return True
-        return False
-            
+        return False 
 
     def define_branches(self):
         if len(self.nodes) == 0 or len(self.nodes) == 1:
@@ -70,9 +81,18 @@ class Circuit():
                 components = []
                 if not self.exixting_branch(newBranch):
                     self.branches.append(newBranch)
+                    node.add_branch(newBranch)
+                    next.node.add_branch(newBranch)
                 
+    def get_incidence_matrix(self):
+        pass
 
-                
+    def __row_incidence(self, node):
+        row = []
+        for branch in self.branches:
+            row.append(node.conected_branch(branch))
+            
+        return row
 
 
 circuit = Circuit()
@@ -108,11 +128,24 @@ class Node():
         self.pin = pin
         pin.define_node(self)
         self.number = number
+        self.branches = []
         self.components = pin.components
         self.isGND = (True if number == 0 else False)
 
     def add_component(self, component):
         self.pin.add_component(component)
+    
+    def add_branch(self, branch):
+        self.branches.append(branch)
+    
+    def conected_branch(self, branch): #Retorna si una branch está o no conectada al nodo y su sentido. -1 saliendo, 1 entrando, 0 no conectada
+        for conected in self.branches:
+            if conected == branch:#Buscar si la rama está conectada
+                if branch.nodes[0] == self: #Si el nodo es el extremo de inicio
+                    return -1
+                else:
+                    return 1
+        return 0
 
     def __str__(self) -> str:
         return "N" + str(self.number)
@@ -122,7 +155,7 @@ class Branch():
     def __init__(self, node1, node2, components:list, number:int) -> None:
         self.components = components
         self.number = number
-        self.nodes = [node1, node2]
+        self.nodes = [node1, node2] #[0]=inicio, [1]=final
         self.ends = (node1.number, node2.number)
         #self.current = self.get_current()
         #self.resistance = self.get_resistance()
@@ -196,21 +229,22 @@ def read_circuit(txt, circuit=circuit):
         matrix[i] = matrix[i].split(" ")
         circuit.add_component(*matrix[i])
 
-#Type, value, pin1, pin2
-texto = """I 2 1 0
-R 1 1 0
-R 2 2 1
-R 3 2 0
+#Type, value, pin1+, pin2-
+texto = """V 2 1 0
+R 1 1 2
+R 2 2 0
 I 10 2 0"""
 read_circuit(texto)
 
 circuit.define_nodes()
-print([str(x) for x in circuit.nodes])
-print(len(circuit.nodes))
+
 circuit.define_branches()
 
+print(circuit.pines)
 
-print("\n".join(str(x)for x in circuit.components))
-print([str(x) for x in circuit.pines])
-print(len(circuit.branches))
+circuit.print_pines()
 
+
+circuit.print_branches()
+
+circuit.print_nodes()
