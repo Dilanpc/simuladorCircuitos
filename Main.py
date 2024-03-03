@@ -9,10 +9,17 @@ class Circuit():
 
         self.incidence_matrix = None
         self.lvk_matrix = None
+        self.zy_matrix = None
     
     def calculate(self):
+        self.__sort_nodes()
         self.get_incidence_matrix()
         self.get_lvk_matrix()
+        self.get_zy_matrix()
+        self.get_vector_s()
+        self.get_full_matrix()
+        self.get_solve()
+
     def print_branches(self):
         for branch in self.branches:
             print( "Branch", branch.number, [str(x) for x in branch.nodes], branch.component   )
@@ -20,6 +27,21 @@ class Circuit():
     def print_nodes(self):
         for node in self.nodes:
             print(node, [str(x) for x in node.components])
+    
+    def print_solve(self):
+        index = 0
+        print("\n Current in each branch")
+        for i in range(len(self.branches)):
+            print(self.solve[index], "Ampers", str(self.branches[i]))
+            index += 1
+        print("\n Tension in each branch")
+        for i in range(len(self.branches)):
+            print(self.solve[index], "Volts", str(self.branches[i]))
+            index += 1
+        print("\n Tension in each node")
+        for i in range(len(self.nodes)-1):
+            print(self.solve[index], "Volts", str(self.nodes[i]))
+            index += 1
 
     def add_node(self, number):
         for i in range(len(self.nodes)): #Busca si el nodo ya está creado
@@ -35,22 +57,35 @@ class Circuit():
         self.branches.append(newBranch)
         return newBranch
     
-    def add_component(self, type:str, value:float, node1:int, node2:int):
-        type = str(type)
+    def add_component(self, typeNumber:str, value:float, node1:int, node2:int):
+        type = str(typeNumber[0])
+        number = int(typeNumber[1])
         value = float(value)
         node1 = self.add_node(int(node1))
         node2 = self.add_node(int(node2))
         branch = self.add_branch(node1, node2)
         if type == 'V':
-            newComponent = Vsourse(value, node1, node2, branch)
+            newComponent = Vsource(number, value, node1, node2, branch)
         elif type == 'I':
-            newComponent = Csourse(value, node1, node2, branch)
+            newComponent = Csource(number, value, node1, node2, branch)
         elif type == 'R':
-            newComponent = Resistor(value, node1, node2, branch)
+            newComponent = Resistor(number, value, node1, node2, branch)
         self.components.append( newComponent)
 
+    def __sort_nodes(self):
+        sort = []
+        node_0 = None
+        for current in range(1, len(self.nodes)):
+            for i in range(len(self.nodes)):
+                if self.nodes[i].number == current:
+                    sort.append(self.nodes[i])
+                elif self.nodes[i].number == 0:
+                    node_0 = i
+        sort.append(self.nodes[node_0])
+        self.nodes = sort
 
-                
+
+    
     def get_incidence_matrix(self):
         matrix =[]
         for node in self.nodes:
@@ -60,10 +95,50 @@ class Circuit():
         return self.incidence_matrix
 
     def get_lvk_matrix(self):
-        incidence = -1 * np.transpose(self.incidence_matrix)
+        incidence = np.transpose(self.incidence_matrix)
         identity = np.eye(len(incidence))
         self.lvk_matrix = np.hstack([identity, incidence])
         return self.lvk_matrix
+
+    def get_zy_matrix(self):
+        matrixZ = []
+        matrixY = []
+        for branch in self.branches:
+            matrixZ.append(self.row_z(branch))
+            matrixY.append(self.row_y(branch))
+        self.zy_matrix = np.hstack([np.array(matrixZ), np.array(matrixY)])
+        return self.zy_matrix
+    
+    def row_y(self, branch):
+        row = []
+        if branch.component.type == 'R':
+            for i in range(len(self.branches)):
+                if branch.number == i+1:
+                    row.append(-1/branch.component.resistance)
+                else:
+                    row.append(0)
+        elif branch.component.type == 'V':
+            for i in range(len(self.branches)):
+                if branch.number == i+1:
+                    row.append(1)
+                else:
+                    row.append(0)
+        elif branch.component.type == 'I':
+            row = [0]*len(self.branches)
+        return np.array(row)
+
+
+    def row_z(self, branch):
+        row = []
+        if branch.component.type == 'R' or branch.component.type == 'I':
+            for i in range(len(self.branches)):
+                if branch.number == i+1:
+                    row.append(1)
+                else:
+                    row.append(0)
+        elif branch.component.type == 'V':
+            row = [0]*len(self.branches)
+        return np.array(row)
 
 
     def row_incidence(self, node):
@@ -73,6 +148,34 @@ class Circuit():
         
         return np.array(row)
 
+    def get_vector_s(self):
+        currents = np.zeros((len(self.branches), 1))
+        tensions = np.zeros((len(self.nodes)-1, 1))
+        sources = self.get_source_vector()
+        self.vector_s = np.vstack([currents, tensions, sources])
+        return self.vector_s
+
+    def get_source_vector(self):
+        column = []
+        for branch in self.branches:
+            if branch.component.type == 'V' or branch.component.type == 'I':
+                column.append([branch.component.value])
+            else:
+                column.append([0])
+        self.source_vector = np.array(column)
+        return self.source_vector
+
+    def get_full_matrix(self):
+        incidence = np.hstack([self.incidence_matrix, np.zeros((len(self.incidence_matrix), len(self.branches)+len(self.nodes)-1))])
+        lvk = np.hstack([np.zeros((len(self.lvk_matrix), len(self.branches))), self.lvk_matrix])
+        zy = np.hstack([self.zy_matrix, np.zeros((len(self.zy_matrix), len(self.nodes)-1))  ])
+        self.full_matrix = np.vstack([incidence, lvk, zy])
+        return self.full_matrix
+    
+    def get_solve(self):
+        self.solve = np.linalg.solve(self.full_matrix, self.vector_s)
+        self.solve = np.round(self.solve, decimals=2)
+        return self.solve
 
 circuit = Circuit()
 
@@ -82,7 +185,7 @@ class Node():
         self.number = number
         self.branches = []
 
-        self.tension = None
+        self.tension = (0 if number == 0 else None)
 
     def add_component(self, component):
         self.components.append(component)
@@ -104,10 +207,10 @@ class Node():
 
         for conected in self.branches:
             if conected == branch:#Buscar si la rama está conectada
-                if branch.nodes[0] == self: #Si coincide con el primer nodo es positivo
-                    return 1
-                else:
+                if branch.nodes[0] == self: #Si coincide con el primer nodo este es el inicio
                     return -1
+                else: #final. Considerando que corriente va del primer nodo al segundo
+                    return 1
         return 0
                 
     def __str__(self) -> str:
@@ -126,24 +229,14 @@ class Branch():
         node2.add_branch(self)
 
 
-    def add_component(self, component):
-        self.components = component
-
     def __str__(self) -> str:
-        return "r"+ str(self.number)
+        return "B"+ str(self.number)
 
-
-
-    def get_resistance(self):
-        comp = self.components
-        resis = 0
-        for i in range(len(comp)):
-            resis += comp[i].resistance
-        return resis
 
 class Component():
-    def __init__(self, node1:Node, node2:Node, branch:Branch) -> None:
+    def __init__(self, number:int, node1:Node, node2:Node, branch:Branch) -> None:
         self.type: str = None
+        self.number :int= number
         self.value = None
         self.tension = None
         self.current = None
@@ -157,22 +250,14 @@ class Component():
 
         self.branch = branch
         self.branch.component = self
-    
-    def next_node(self, node) -> Node:
-        if node == self.node1:
-            return self.node2
-        if node == self.node2:
-            return self.node1
-        else:
-            return None
 
     def __str__(self) -> str:
-        return str(self.type) + " " + str(self.value) +" " + str(self.node1.number)+ " " +str(self.node2.number)
+        return str(self.type) + "-"+str(self.number) +" "+ str(self.value) +" " + str(self.node1.number)+ " " +str(self.node2.number)
         
 
-class Vsourse(Component):
-    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
-        super().__init__(node1, node2, branch)
+class Vsource(Component):
+    def __init__(self, number, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
         self.type = 'V'
         self.value = value
         self.tension = value
@@ -180,11 +265,18 @@ class Vsourse(Component):
         node1.add_component(self)
         node2.add_component(self)
 
+class VCVsource(Component): #Voltaje Control Voltage Source
+    def __init__(self, number, function, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
+        self.type = 'VCV'
+        self.value = function
+        
 
 
-class Csourse(Component):
-    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
-        super().__init__(node1, node2, branch)
+
+class Csource(Component):
+    def __init__(self, number, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
         self.type = 'I'
         self.value = value
         self.current = value
@@ -194,8 +286,8 @@ class Csourse(Component):
 
 
 class Resistor(Component):
-    def __init__(self, value: float, node1: Node, node2: Node, branch: Branch) -> None:
-        super().__init__(node1, node2, branch)
+    def __init__(self, number, value: float, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
         self.type = 'R'
         self.value = value
         self.resistance = value
@@ -209,13 +301,18 @@ def read_circuit(txt, circuit=circuit):
     matrix = txt.split("\n")
     for i in range(len(matrix)):
         matrix[i] = matrix[i].split(" ")
+        matrix[i][0] = matrix[i][0].split("-")
         circuit.add_component(*matrix[i])
 
-#Type, value, pin1+, pin2-
-texto = """V 2 1 0
-R 1 2 1
-R 2 0 2
-I 10 2 0"""
+#Type-number value, pin1+, pin2-
+texto = """R-1 4 1 3
+I-2 -3 2 1
+R-3 3 1 2
+V-4 22 3 2
+I-5 -8 0 1
+R-6 1 2 0
+R-7 5 3 0
+I-8 -25 3 0"""
 read_circuit(texto)
 
 circuit.calculate()
@@ -227,6 +324,14 @@ circuit.print_nodes()
 
 print("-----------------")
 
-print(circuit.lvk_matrix)
+#print("Incidence")
+#print(circuit.incidence_matrix)
 
-#print(np.hstack([circuit.incidence_matrix(), np.eye(2)]))
+# print("lvk")
+# print(circuit.lvk_matrix)
+# print("zy")
+# print(circuit.zy_matrix)
+# print("Solve:")
+
+circuit.print_solve()
+
