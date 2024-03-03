@@ -29,6 +29,7 @@ class Circuit():
             print(node, [str(x) for x in node.components])
     
     def print_solve(self):
+        if self.solve == []: return 0
         index = 0
         print("\n Current in each branch")
         for i in range(len(self.branches)):
@@ -74,7 +75,7 @@ class Circuit():
 
     def __sort_nodes(self):
         sort = []
-        node_0 = None
+        node_0 = 0
         for current in range(1, len(self.nodes)):
             for i in range(len(self.nodes)):
                 if self.nodes[i].number == current:
@@ -92,12 +93,15 @@ class Circuit():
             if node.number != 0:
                 matrix.append(self.row_incidence(node))
         self.incidence_matrix = np.array(matrix)
+        print(self.incidence_matrix)
         return self.incidence_matrix
 
     def get_lvk_matrix(self):
         incidence = np.transpose(self.incidence_matrix)
         identity = np.eye(len(incidence))
-        self.lvk_matrix = np.hstack([identity, incidence])
+        print(identity)
+        print(incidence)
+        self.lvk_matrix = (np.hstack([identity, incidence]) if len(identity) !=0 or len(incidence)!=0 else []) 
         return self.lvk_matrix
 
     def get_zy_matrix(self):
@@ -173,6 +177,10 @@ class Circuit():
         return self.full_matrix
     
     def get_solve(self):
+        if np.linalg.det(self.full_matrix) == 0:
+            print("No hay solución")
+            self.solve = []
+            return 0
         self.solve = np.linalg.solve(self.full_matrix, self.vector_s)
         self.solve = np.round(self.solve, decimals=2)
         return self.solve
@@ -302,9 +310,45 @@ def read_circuit(txt, circuit=circuit):
     for i in range(len(matrix)):
         matrix[i] = matrix[i].split(" ")
         matrix[i][0] = matrix[i][0].split("-")
+        if len(matrix[i]) != 4:
+            print("datos incorrectos")
+            exit()
         circuit.add_component(*matrix[i])
 
+def get_data():
+    print("""V : Fuente de tensión
+I : Fuente de Corriente
+R : Resistor
+
+Ingrese cada elemento según se indica:
+Tipo-numero_identificador valor Nodo1 Nodo2
+    Ejemplo: R-1 10 1 0
+
+    Notas:
+La polaridad se define por el orden de los terminales, el terminal1 es positivo.
+El flujo de corriente tiene dirección del terminal2 al terminal1 en cada elemnto.
+El nodo de referencia será aquel con número 0.
+Para finalziar el envío de datos, ingresar una cadena vacía.
+""")
+    elements = []
+    adding = "0"
+    i=1
+    while adding != '':
+        adding = input(f"Ingrese elemento {i}: ")
+        if adding != '':
+            elements.append(adding)
+        
+        i+=1
+    txt = elements[0]
+    for i in range(1, len(elements)):
+        txt += "\n" + elements[i]
+
+    return txt
+
+
 #Type-number value, pin1+, pin2-
+        
+
 texto = """R-1 4 1 3
 I-2 -3 2 1
 R-3 3 1 2
@@ -313,7 +357,16 @@ I-5 -8 0 1
 R-6 1 2 0
 R-7 5 3 0
 I-8 -25 3 0"""
-read_circuit(texto)
+
+texto2 = """I-1 1 1 0
+I-2 2 0 2
+R-1 2 2 1
+R-2 1 1 0
+R-3 4 2 0"""
+texto3 = """V-1 10 0 1
+V-2 10 1 0"""
+
+read_circuit(texto3)
 
 circuit.calculate()
 
@@ -335,3 +388,4 @@ print("-----------------")
 
 circuit.print_solve()
 
+input("Presione Enter para salir")
