@@ -22,7 +22,7 @@ class Circuit():
 
     def print_branches(self):
         for branch in self.branches:
-            print( "Branch", branch.number, [str(x) for x in branch.nodes], branch.component   )
+            print( "Branch", branch.number, "+"+str(branch.nodes[0]), "->", str(branch.nodes[1])+"-", "|", branch.component   )
     
     def print_nodes(self):
         for node in self.nodes:
@@ -58,22 +58,36 @@ class Circuit():
         self.branches.append(newBranch)
         return newBranch
     
-    def add_component(self, typeNumber:str, value, node1:int, node2:int):
-        type = str(typeNumber[0])
-        number = int(typeNumber[1])
+    def __fin(self, n, dato):
+        print(f"Componente {dato} no definido") if n==1 else print(f"Nombre {dato} en uso")
+        exit()
+
+    def verify(self, type, number):
+        tipos = ['V', 'I', 'R', 'VCV', 'ICI', 'VCI', 'ICV']
+        if not (type in tipos): self.__fin(1, type)
+        if self.find_component(type+str(number)): self.__fin(2, type+str(number))
+
+    def add_component(self, type:str, number:int, value, node1:int, node2:int):
+        self.verify(type, number)
+        type = str(type)
+        number = int(number)
         node1 = self.add_node(int(node1))
         node2 = self.add_node(int(node2))
         branch = self.add_branch(node1, node2)
         if type == 'V':
-            newComponent = Vsource(number, int(value), node1, node2, branch)
+            newComponent = Vsource(number, float(value), node1, node2, branch)
         elif type == 'I':
-            newComponent = Isource(number, int(value), node1, node2, branch)
+            newComponent = Isource(number, float(value), node1, node2, branch)
         elif type == 'R':
-            newComponent = Resistor(number, int(value), node1, node2, branch)
-        elif type == "VCV":
+            newComponent = Resistor(number, float(value), node1, node2, branch)
+        elif type == 'VCV':
             newComponent = VCVsource(number, str(value), node1, node2, branch)
-        elif type == "ICI":
+        elif type == 'ICI':
             newComponent = ICIsource(number, str(value), node1, node2, branch)
+        elif type == 'VCI':
+            newComponent = VCIsource(number, str(value), node1, node2, branch)
+        elif type == 'ICV':
+            newComponent = ICVsource(number, str(value), node1, node2, branch)
         self.components.append( newComponent)
 
     def find_component(self, name):
@@ -124,7 +138,7 @@ class Circuit():
 
     def row_z(self, branch):#De corrientes
         row = []
-        if branch.component.type == 'R' or branch.component.type == 'I':
+        if branch.component.type == 'R' or branch.component.type == 'I' or branch.component.type == 'ICV':
             for i in range(len(self.branches)):#ubicar en la columna correspondiente a la corriente
                 if branch.number == i+1:
                     row.append(1)
@@ -144,11 +158,18 @@ class Circuit():
                     row.append(1)
                 else:
                     row.append(0)
-
+        elif branch.component.type == "VCI":
+            a = branch.component.constant
+            reference = self.find_component(branch.component.reference)
+            for i in range(len(self.branches)):
+                if reference.branch.number == i+1:
+                    row.append(-a)
+                else:
+                    row.append(0)
 
         return np.array(row)
 
-    def row_y(self, branch):
+    def row_y(self, branch): #De tensiones
         row = []
         if branch.component.type == 'R':
             for i in range(len(self.branches)):
@@ -156,7 +177,7 @@ class Circuit():
                     row.append(-1/ branch.component.resistance )
                 else:
                     row.append(0)
-        elif branch.component.type == 'V':
+        elif branch.component.type == 'V' or branch.component.type == 'VCI':
             for i in range(len(self.branches)):
                 if branch.number == i+1:
                     row.append(1)
@@ -177,7 +198,14 @@ class Circuit():
                 else:
                     row.append(0)
 
-
+        elif branch.component.type == "ICV":
+            a = branch.component.constant
+            reference = self.find_component(branch.component.reference)
+            for i in range(len(self.branches)):
+                if reference.branch.number == i+1:
+                    row.append(-a)
+                else:
+                    row.append(0)
 
         return np.array(row)
 
@@ -218,7 +246,7 @@ class Circuit():
             self.solve = np.array([])
             return 0
         self.solve = np.linalg.solve(self.full_matrix, self.vector_s)
-        self.solve = np.round(self.solve, decimals=2)
+        self.solve = np.round(self.solve, decimals=4)
         return self.solve
 
 circuit = Circuit()
@@ -300,7 +328,7 @@ class Component():
         self.branch.component = self
     
     def get_name(self):
-        self.name = self.type + "." + str(self.number)
+        self.name = self.type + str(self.number)
     
     def decode_function(self): # n*C-n : -2*R.1
         txt = self.function.split("*")
@@ -308,7 +336,7 @@ class Component():
         self.reference = txt[1]
 
     def __str__(self) -> str:
-        return str(self.type) + "."+str(self.number) +" "+ str(self.value) +" " + str(self.node1.number)+ " " +str(self.node2.number)
+        return str(self.type) + str(self.number) +" "+ str(self.value) +" " + str(self.node1.number)+ " " +str(self.node2.number)
         
 
 class Vsource(Component):
@@ -330,6 +358,14 @@ class VCVsource(Component): #Tensión controlada por tensión
         self.get_name()
         self.decode_function()
 
+class VCIsource(Component): #Tensión controlada por intensidad
+    def __init__(self, number: int, function, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
+        self.type = "VCI"
+        self.value = function
+        self.function = function
+        self.get_name()
+        self.decode_function()
         
 
 
@@ -352,6 +388,15 @@ class ICIsource(Component): #Intencidad controlada por Intensidad
         self.get_name()
         self.decode_function()
 
+class ICVsource(Component): #Intensidad controlada por voltaje
+    def __init__(self, number: int, function, node1: Node, node2: Node, branch: Branch) -> None:
+        super().__init__(number, node1, node2, branch)
+        self.type = "ICV"
+        self.value = function
+        self.function = function
+        self.get_name()
+        self.decode_function()
+ 
     
         
 
@@ -366,13 +411,24 @@ class Resistor(Component):
 
 
 
-
 def read_circuit(txt, circuit=circuit):
     matrix = txt.split("\n")
     for i in range(len(matrix)):
         matrix[i] = matrix[i].split(" ")
-        matrix[i][0] = matrix[i][0].split(".")
-        if len(matrix[i]) != 4:
+        
+        type = ""
+        number = 0
+        for j in range(len(matrix[i][0])):
+            
+            if matrix[i][0][j].isalpha():
+                type += matrix[i][0][j]
+            else:
+                number = int( matrix[i][0][j:] )
+
+        matrix[i][0] = type
+        matrix[i].insert(1, number)
+
+        if len(matrix[i]) != 5:
             print("datos incorrectos")
             exit()
         circuit.add_component(*matrix[i])
@@ -381,14 +437,16 @@ def get_data():
     print("""V : Fuente de tensión
 I : Fuente de Corriente
 R : Resistor
+ICI : Corriente controlada por corriente
+VCV : Tensión controlada por tensión
 
 Ingrese cada elemento según se indica:
 Tipo-numero_identificador valor Nodo1 Nodo2
     Ejemplo: R.1 10 1 0
 
     Notas:
-La polaridad se define por el orden de los terminales, el terminal1 es positivo.
-El flujo de corriente tiene dirección del terminal2 al terminal1 en cada elemnto.
+La polaridad se define por el orden de los nodos, el primer nodo es positivo.
+El flujo de corriente tiene dirección del primer al segundo nodo en cada elemnto.
 El nodo de referencia será aquel con número 0.
 Para finalziar el envío de datos, ingresar una cadena vacía.
 """)
@@ -412,22 +470,33 @@ Para finalziar el envío de datos, ingresar una cadena vacía.
         
 
 texto = """R-1 4 1 3
-I.2 -3 2 1
-R.3 3 1 2
-V.4 22 3 2
-I.5 -8 0 1
-R.6 1 2 0
-R.7 5 3 0
-I.8 -25 3 0"""
+I2 -3 2 1
+R3 3 1 2
+V4 22 3 2
+I5 -8 0 1
+R6 1 2 0
+R7 5 3 0
+I8 -25 3 0"""
 
-texto2 = """I.1 1 0 1
-VCV.2 2*R.2 2 0
-R.1 2 2 1
-R.2 1 1 0
-R.3 4 2 0"""
+texto2 = """I1 1 0 1
+VCV2 2*R2 2 0
+R1 2 2 1
+R2 1 1 0
+R3 4 2 0"""
 
+tres = """V1 2 1 0
+R1 1000 1 2
+R2 1000 2 0
+ICI1 2*R4 2 0
+R4 1000 2 0"""
 
-read_circuit(texto2)
+cuatro = """V1 10 1 0
+R1 2 1 2
+V2 3 2 0
+R2 1 2 3
+ICV1 2*R1 0 3"""
+
+read_circuit(cuatro)
 
 circuit.calculate()
 
@@ -445,8 +514,8 @@ print("-----------------")
 # print(circuit.lvk_matrix)
 # print("zy")
 # print(circuit.zy_matrix)
-# print("Solve:")
+print("Solve:")
 circuit.print_solve()
-#print(circuit.full_matrix)
+
 
 input("Presione Enter para salir")
