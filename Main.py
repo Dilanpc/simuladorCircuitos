@@ -11,6 +11,29 @@ class Circuit():
         self.lvk_matrix = None
         self.zy_matrix = None
     
+    def read(self, txt):
+        matrix = txt.split("\n")
+        for i in range(len(matrix)):
+            matrix[i] = matrix[i].split(" ")
+        
+            type = ""
+            number = 0
+            for j in range(len(matrix[i][0])):
+            
+                if matrix[i][0][j].isalpha():
+                    type += matrix[i][0][j]
+                else:
+                    number = int( matrix[i][0][j:] )
+
+            matrix[i][0] = type
+            matrix[i].insert(1, number)
+
+            if len(matrix[i]) != 5:
+                print("datos incorrectos")
+                exit()
+            self.add_component(*matrix[i])
+
+
     def calculate(self):
         self.__sort_nodes()
         self.get_incidence_matrix()
@@ -20,13 +43,30 @@ class Circuit():
         self.get_full_matrix()
         self.get_solve()
 
+    def reset(self):
+        self.nodes.clear()
+        self.branches.clear()
+        self.components.clear()
+        self.incidence_matrix = None
+        self.lvk_matrix = None
+        self.zy_matrix = None
+
     def print_branches(self):
         for branch in self.branches:
             print( "Branch", branch.number, "+"+str(branch.nodes[0]), "->", str(branch.nodes[1])+"-", "|", branch.component   )
-    
+    def get_branches_txt(self):
+        txt = ""
+        for branch in self.branches:
+            txt += "Rama " + str(branch.number) + " | " + str(branch.nodes[0]) + " -> " + str(branch.nodes[1]) + " | " + str(branch.component) + "\n"
+        return txt
     def print_nodes(self):
         for node in self.nodes:
             print(node, [str(x) for x in node.components])
+    def get_nodes_txt(self):
+        txt = ""
+        for node in self.nodes:
+            txt += "Nodo " + str(node.number) + " " + str([str(x) for x in node.components]) + "\n"
+        return txt
     
     def print_solve(self):
         if self.solve.size <= 0: return 0
@@ -496,26 +536,19 @@ V2 3 2 0
 R2 1 2 3
 ICV1 2*R1 0 3"""
 
-read_circuit(cuatro)
+# circuit.read(cuatro)
 
-circuit.calculate()
-
-
-circuit.print_branches()
-
-circuit.print_nodes()
-
-print("-----------------")
-
-#print("Incidence")
-#print(circuit.incidence_matrix)
-
-# print("lvk")
-# print(circuit.lvk_matrix)
-# print("zy")
-# print(circuit.zy_matrix)
-print("Solve:")
-circuit.print_solve()
+# circuit.calculate()
 
 
-input("Presione Enter para salir")
+# circuit.print_branches()
+
+# circuit.print_nodes()
+
+# print("-----------------")
+
+# print("Solve:")
+# circuit.print_solve()
+
+
+# input("Presione Enter para salir")
