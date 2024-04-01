@@ -289,7 +289,7 @@ class Circuit():
         self.solve = np.round(self.solve, decimals=4)
         return self.solve
 
-circuit = Circuit()
+
 
 class Node():
     def __init__(self, number) -> None:
@@ -452,7 +452,7 @@ class Resistor(Component):
 
 
 if __name__ == "__main__":
-
+    circuit = Circuit()
     def get_data():
         print("""V : Fuente de tensión
 I : Fuente de Corriente
@@ -462,7 +462,7 @@ VCV : Tensión controlada por tensión
 
 Ingrese cada elemento según se indica:
 Tipo-numero_identificador valor Nodo1 Nodo2
-    Ejemplo: R.1 10 1 0
+    Ejemplo: R1 10 1 0
 
     Notas:
 La polaridad se define por el orden de los nodos, el primer nodo es positivo.
@@ -486,7 +486,7 @@ Para finalziar el envío de datos, ingresar una cadena vacía.
         return txt
 
 
-    #Type-number value, pin1+, pin2-
+    #Type-number value, node1+, node2-
 
     texto = """R-1 4 1 3
 I2 -3 2 1
@@ -515,10 +515,10 @@ V2 3 2 0
 R2 1 2 3
 ICV1 2*R1 0 3"""
 
-    # byInput = get_data()
-    # circuit.read(byInput)
+    byInput = get_data()
+    circuit.read(byInput)
 
-    circuit.read(cuatro)
+    # circuit.read(cuatro)
 
     circuit.calculate()
 

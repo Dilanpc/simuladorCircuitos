@@ -17,8 +17,17 @@ class Interfaz(tk.Tk):
         self.bloqueValor = Frame(self, 3)
         self.bloqueAccion = Frame(self, 4)
 
-        self.buttonCalc = tk.Button(self, text="Calcular", bg="#035EAD", activebackground="#011c34", padx=30, pady=20, font=("Arial", 11), command=self.calcular)
-        self.buttonCalc.place(relx=1, rely=0, anchor='ne')
+        self.frameCalc = tk.Frame(self, bg=bgcolor)
+
+        self.buttonCalc = tk.Button(self.frameCalc, text="Calcular", bg="#035EAD", activebackground="#011c34", padx=30, pady=20, font=("Arial", 11), command=self.calcular)
+        self.buttonCalc.pack()
+        self.buttonClean = tk.Button(self.frameCalc, text="Limpiar", bg="#E8f9c5", activebackground="#5d644f", padx=10, pady=7, font=("Arial", 11), command=self._reset)
+        self.buttonClean.pack(side="right")
+
+        self.frameCalc.place(relx=1, rely=0, anchor='ne')
+
+        self.buttonHelp = tk.Button(self, text="Manual", bg="#035EAD", activebackground="#011c34", padx=20, pady=10, font=("Arial", 11), command=self.openHelp)
+        self.buttonHelp.place(relx=1, rely=1, anchor='se')
 
         self.output = ""
 
@@ -84,11 +93,9 @@ class Interfaz(tk.Tk):
         result.title("Solución")
         result.geometry("800x800")
         text = self.circuit.get_branches_txt() + self.circuit.get_nodes_txt() + self.__get_solve_txt()
-        solucion = tk.Label(result, text=text, bg=bgcolor, fg="white", font=("Times new roman", 18), anchor="w", justify="left")
-        #solucion.place(x=10, y=10)
-        sol2 = scrolledtext.ScrolledText(result, wrap=tk.WORD, width=100, height=100, bg=bgcolor, fg="white", font=("Consolas", 18), borderwidth=0)
-        sol2.insert(tk.INSERT, text)
-        sol2.pack(padx=10, pady=10)
+        solucion = scrolledtext.ScrolledText(result, wrap=tk.WORD, width=100, height=100, bg=bgcolor, fg="white", font=("Consolas", 18), borderwidth=0)
+        solucion.insert(tk.INSERT, text)
+        solucion.pack(padx=10, pady=10)
 
         self.circuit.reset()
     
@@ -117,7 +124,19 @@ class Interfaz(tk.Tk):
                 index += 1
 
         return txt
-        
+    
+    def openHelp(self):
+        helpScreen = tk.Tk()
+        helpScreen.config(bg=bgcolor)
+        helpScreen.title("Manual")
+        helpScreen.geometry("900x700")
+        helpText = scrolledtext.ScrolledText(helpScreen, wrap=tk.WORD, width=100, height=100, bg=bgcolor, fg="white", font=("Consolas", 12), borderwidth=0)
+        with open("manual_interfaz.txt", encoding="utf-8") as archivo:
+            contenido = archivo.read()
+            print(contenido)
+        helpText.insert(tk.INSERT, contenido)
+        helpText.pack(padx=10, pady=10)
+
 
 
 
@@ -142,9 +161,9 @@ class Frame(tk.Frame):
             self.subFrame1 = tk.Frame(self, bg=bgcolor)
             self.subFrame2 = tk.Frame(self, bg=bgcolor)
 
-            txtN1 = tk.Label(self.subFrame1, text="Node +", fg="white", bg=bgcolor, font=("Arial", 16))
+            txtN1 = tk.Label(self.subFrame1, text="Nodo +", fg="white", bg=bgcolor, font=("Arial", 16))
             txtN1.pack()
-            txtN2 = tk.Label(self.subFrame2, text="Node -", fg="white", bg=bgcolor, font=("Arial", 16))
+            txtN2 = tk.Label(self.subFrame2, text="Nodo -", fg="white", bg=bgcolor, font=("Arial", 16))
             txtN2.pack()
 
             self.inN1 = tk.Entry(self.subFrame1, justify="center", font=("Arial", 16), width=10)
@@ -169,8 +188,7 @@ class Frame(tk.Frame):
         elif n == 4:
             margen = tk.Label(self, pady=10, bg=bgcolor)
             buttonAdd = tk.Button(self, text="Añadir", bg="#1C8C62", activebackground="#0e4631", padx=30, pady=20, font=("Arial", 11), command=where.add_component)
-            buttonClean = tk.Button(self, text="Limpiar", bg="#E8f9c5", activebackground="#5d644f", padx=10, pady=7, font=("Arial", 11), command=where._reset)
-            self.widgets = [margen, buttonAdd, buttonClean]
+            self.widgets = [margen, buttonAdd]
 
 
     def add_button(self, txt, type):
@@ -237,6 +255,8 @@ screen.botones.add_button("Corriente controlada por tensión", "ICV")
 
 
 screen.botones.show_widgets_h()
+
+
 
 
 screen.mainloop()

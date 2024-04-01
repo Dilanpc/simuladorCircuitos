@@ -1,0 +1,59 @@
+Datos necesarios para el funcionamiento del simulador:
+    1. Nodos a los que se encuntra conectado cada componente
+    2. Polaridad para medición de cada componente
+    3. Nodo de referencia
+    4. Valor de tensión para fuentes de tensión
+    5. Valor de corriente para fuentes de corriente
+    6. Valor de resistencia para resistores
+    7. Componente al que hace referencia una fuente dependiente
+    8. Constante de proporcionalidad para fuentes dependientes
+    9. Número arbitrario para referenciar cada componente
+
+Uso directamente desde el código:
+    Se recibe una cadena de texto, cada renglón es un componente.
+    La estructura de cada componente es
+        Tipo Número de referencia (espacio) valor (espacio) nodo positivo (espacio) nodo negativo
+    Donde se indica "(espacio)" se agrega un solo caracter espacio.
+    El "Tipo" y "Número de referencia" se escriben pengados (sin espacio de por medio)
+
+Tipo:
+    El tipo se selecciona a partir de el texto que se ingrese:
+    V: Fuente de tensión
+    I: Fuente de corriente
+    R: Resistor
+    VCV: Fuente de tensión controlada por tensión
+    VCI: Fuente de tensión controlada por corriente
+    ICI: Fuente de corriente controlada por corriente
+    ICV: Fuente de corrrinete controlada por tensión
+
+Número de referencia:
+    Se usa para diferenciar distintos componentes, debe ser único para cada tipo de componente
+    de esta forma es posible tener dos comoponentes con el mismo número de referencia si el tipo 
+    de componente es distinto, si son del mismo tipo, sus números de referencia deben ser diferentes
+    Ejemplo: V2, R1, I2, V1, VCV1
+    Contra ejemplo: V3, V3
+
+Valor:
+    Dependiendo del tipo de elemento, este representa una magnitud distanta.
+    Magnitud dependiendo del tipo:
+    V: Tensión [Volts]
+    I: Corriente [Amperios]
+    R: resistencia [Ohms]
+
+    Para las fuentes dependientes se aplica la siguiente estructura:
+    Constante*Componente
+    El componente se referencia con el tipo y número de referencia
+    Ejemplo: 2*V1, -5*R2
+    La polaridad en la función será la misma del componente al que se haga referencia.
+    Si se desea una polaridad opuesta es posible agregar una constante negativa produciendo el mismo efecto
+
+Nodos:
+    Cada componente tiene dos terminales, y su polaridad se define según el orden de los nodos.
+    El primer nodo es el positivo, el segundo el negativo
+    El flujo de corriente utilizado es el convencional (De positivo a negativo)
+
+    El Nodo de referencia será aquel con número 0.
+
+
+Una vez ingresados los datos mediante la función read(), se podrá ejecutar calcular()
+y luego print_solve() para ver los resultados junto a su significado. Funciones pertenecientes a la clase Circuit

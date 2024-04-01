@@ -1,0 +1,43 @@
+Datos necesarios para el funcionamiento del simulador:
+    1. Nodos a los que se encuntra conectado cada componente
+    2. Polaridad para medición de cada componente
+    3. Nodo de referencia
+    4. Valor de tensión para fuentes de tensión
+    5. Valor de corriente para fuentes de corriente
+    6. Valor de resistencia para resistores
+    7. Componente al que hace referencia una fuente dependiente
+    8. Constante de proporcionalidad para fuentes dependientes
+    9. Número arbitrario para referenciar cada componente
+
+Paso 1. Tipo de componente
+    Seleccionar un componente, puede seleccionarlos haciendo clic en alguno de los botones de la parte superior.
+
+Paso 2. Número de referencia
+    Dar un número de referencia, este se usa para diferenciar componentes del mismo tipo.
+    Un componente no puede tener el mismo número de referencia y el mismo tipo a la vez.
+
+Paso 3. Nodos
+    Asignar los nodos, cada nodo está representado por un número, de forma que una conexión entre dos compoenntes se forma cuando ambos tienen asignado el mismo número.
+    La polaridad se define por el orden de los nodos, el nodo izquierdo es positivo, el derecho negativo.
+    En el simulador se usa el flujo de corriente convencional (De positivo a negativo).
+    El nodo de referencia se asigna con el número 0
+
+Paso 4. Valor
+    Dependiendo del tipo de componente, el valor representa diferentes magnitudes:
+    Para resistores: resistencia [Ohms]
+    Para fuentes de tensión: tensión [Volts]
+    Para fuentes de corriente: corriente [Ampers]
+
+    Para fuentes dependientes:
+        El valor en las fuentes dependientes es una función que se escribe de la siguiente manera:
+        constante*componente
+        siendo la constante el valor de la constante de proporcionalidad y el componente es el tipo junto a el número de referencia.
+        Ejemplo: 2*R3  ,   -5*V1
+        La polaridad con la que se toma el componente de referencia es la misma que tiene asignada, si se desea la opuesta es posible multiplicar por -1 que es equivalente a invertir la polaridad.
+
+Paso 5. Añadir
+    Una vez llenados todos los campos presione añadir, verá que en la esquina superior izquierda se incluirá el texto que será enviado para calcular.
+    Ahora que se ha guardado el elemento puede agregar más.
+
+Paso 6. calcular
+    En la esquina superior derecha verá el botón calcular, al presionarlo se abrirá una nueva ventana que mostrará cada rama, nodo y sus valores de tensión y corriente
