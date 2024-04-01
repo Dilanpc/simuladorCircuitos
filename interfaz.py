@@ -239,7 +239,8 @@ screen.botones.add_button("Corriente controlada por tensión", "ICV")
 
 screen.botones.show_widgets_h()
 
-
+screen.output = "V1 10 1 0\nR1 5 1 0\nR2 5 1 2\nV2 5 2 0\nR3 5 2 0\nR4 5 2 3\nV3 10 3 0\nR5 5 3 0\nR6 5 3 4\nV4 10 4 0\nR7 5 4 0\nR8 5 4 1"
+screen.calcular()
 
 screen.mainloop()
 
