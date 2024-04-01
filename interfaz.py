@@ -236,9 +236,7 @@ screen.botones.add_button("Tensión controlada por corriente", "VCI")
 screen.botones.add_button("Corriente controlada por tensión", "ICV")
 
 
-
 screen.botones.show_widgets_h()
-
 
 
 screen.mainloop()
