@@ -57,7 +57,7 @@ class Circuit():
     def get_branches_txt(self):
         txt = ""
         for branch in self.branches:
-            txt += "Rama " + str(branch.number) + " | " + str(branch.nodes[0]) + " -> " + str(branch.nodes[1]) + " | " + str(branch.component) + "\n"
+            txt += "Rama " + str(branch.number) + " | +" + str(branch.nodes[0]) + " -> " + str(branch.nodes[1]) + "- | " + str(branch.component) + "\n"
         return txt
     def print_nodes(self):
         for node in self.nodes:
@@ -451,30 +451,10 @@ class Resistor(Component):
 
 
 
-def read_circuit(txt, circuit=circuit):
-    matrix = txt.split("\n")
-    for i in range(len(matrix)):
-        matrix[i] = matrix[i].split(" ")
-        
-        type = ""
-        number = 0
-        for j in range(len(matrix[i][0])):
-            
-            if matrix[i][0][j].isalpha():
-                type += matrix[i][0][j]
-            else:
-                number = int( matrix[i][0][j:] )
+if __name__ == "__main__":
 
-        matrix[i][0] = type
-        matrix[i].insert(1, number)
-
-        if len(matrix[i]) != 5:
-            print("datos incorrectos")
-            exit()
-        circuit.add_component(*matrix[i])
-
-def get_data():
-    print("""V : Fuente de tensión
+    def get_data():
+        print("""V : Fuente de tensión
 I : Fuente de Corriente
 R : Resistor
 ICI : Corriente controlada por corriente
@@ -490,26 +470,25 @@ El flujo de corriente tiene dirección del primer al segundo nodo en cada elemnt
 El nodo de referencia será aquel con número 0.
 Para finalziar el envío de datos, ingresar una cadena vacía.
 """)
-    elements = []
-    adding = "0"
-    i=1
-    while adding != '':
-        adding = input(f"Ingrese elemento {i}: ")
-        if adding != '':
-            elements.append(adding)
-        
-        i+=1
-    txt = elements[0]
-    for i in range(1, len(elements)):
-        txt += "\n" + elements[i]
+        elements = []
+        adding = "0"
+        i=1
+        while adding != '':
+            adding = input(f"Ingrese elemento {i}: ")
+            if adding != '':
+                elements.append(adding)
+            
+            i+=1
+        txt = elements[0]
+        for i in range(1, len(elements)):
+            txt += "\n" + elements[i]
 
-    return txt
+        return txt
 
 
-#Type-number value, pin1+, pin2-
-        
+    #Type-number value, pin1+, pin2-
 
-texto = """R-1 4 1 3
+    texto = """R-1 4 1 3
 I2 -3 2 1
 R3 3 1 2
 V4 22 3 2
@@ -518,37 +497,40 @@ R6 1 2 0
 R7 5 3 0
 I8 -25 3 0"""
 
-texto2 = """I1 1 0 1
+    texto2 = """I1 1 0 1
 VCV2 2*R2 2 0
 R1 2 2 1
 R2 1 1 0
 R3 4 2 0"""
 
-tres = """V1 2 1 0
+    tres = """V1 2 1 0
 R1 1000 1 2
 R2 1000 2 0
 ICI1 2*R4 2 0
 R4 1000 2 0"""
 
-cuatro = """V1 10 1 0
+    cuatro = """V1 10 1 0
 R1 2 1 2
 V2 3 2 0
 R2 1 2 3
 ICV1 2*R1 0 3"""
 
-# circuit.read(cuatro)
+    # byInput = get_data()
+    # circuit.read(byInput)
 
-# circuit.calculate()
+    circuit.read(cuatro)
 
-
-# circuit.print_branches()
-
-# circuit.print_nodes()
-
-# print("-----------------")
-
-# print("Solve:")
-# circuit.print_solve()
+    circuit.calculate()
 
 
-# input("Presione Enter para salir")
+    circuit.print_branches()
+
+    circuit.print_nodes()
+
+    print("-----------------")
+
+    print("Solve:")
+    circuit.print_solve()
+
+
+    input("Presione Enter para salir")

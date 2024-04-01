@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import scrolledtext
 from Main import Circuit
 
 bgcolor = "#141414"
@@ -66,7 +67,8 @@ class Interfaz(tk.Tk):
         value = self.bloqueValor.inValor.get()
         node1 = self.bloqueImagen.inN1.get()
         node2 = self.bloqueImagen.inN2.get()
-        txt = type + reference + " " + value + " " + node1 + " " + node2 + "\n"
+        txt = ("\n" if len(self.output) != 0 and self.output[-1] != "\n" else "")
+        txt += type + reference + " " + value + " " + node1 + " " + node2 + "\n"
 
         self.output += txt
         self.txtOutput.config(text=self.output)
@@ -82,8 +84,12 @@ class Interfaz(tk.Tk):
         result.title("Solución")
         result.geometry("800x800")
         text = self.circuit.get_branches_txt() + self.circuit.get_nodes_txt() + self.__get_solve_txt()
-        solucion = tk.Label(result, text=text, bg=bgcolor, fg="white", font=("Times new roman", 18))
-        solucion.pack()
+        solucion = tk.Label(result, text=text, bg=bgcolor, fg="white", font=("Times new roman", 18), anchor="w", justify="left")
+        #solucion.place(x=10, y=10)
+        sol2 = scrolledtext.ScrolledText(result, wrap=tk.WORD, width=100, height=100, bg=bgcolor, fg="white", font=("Consolas", 18), borderwidth=0)
+        sol2.insert(tk.INSERT, text)
+        sol2.pack(padx=10, pady=10)
+
         self.circuit.reset()
     
     def __get_solve_txt(self):
@@ -93,15 +99,21 @@ class Interfaz(tk.Tk):
             index = 0
             txt += "\n Corriente en cada rama\n"
             for i in range(len(self.circuit.branches)):
-                txt += str(self.circuit.solve[index][0]) + " Ampers " + str(self.circuit.branches[i])+"\n"
+                dato = self.circuit.solve[index][0]
+                txt +=  (" " if str(dato)[0]!="-" else "") + str(dato)
+                txt += " Ampers " + str(self.circuit.branches[i])+"\n"
                 index += 1
             txt += "\n Tensión en cada rama \n"
             for i in range(len(self.circuit.branches)):
-                txt += str(self.circuit.solve[index][0]) + " Volts " + str(self.circuit.branches[i]) + "\n"
+                dato = self.circuit.solve[index][0]
+                txt += (" " if str(dato)[0]!="-" else "") + str(dato)
+                txt += " Volts " + str(self.circuit.branches[i]) + "\n"
                 index += 1
             txt += "\n Tensión en cada nodo\n"
             for i in range(len(self.circuit.nodes)-1):
-                txt += str(self.circuit.solve[index][0]) + " Volts " + str(self.circuit.nodes[i]) + "\n"
+                dato = self.circuit.solve[index][0]
+                txt += (" " if str(dato)!="-" else "") + str(dato)
+                txt += " Volts " + str(self.circuit.nodes[i]) + "\n"
                 index += 1
 
         return txt
@@ -229,6 +241,6 @@ screen.botones.show_widgets_h()
 
 
 
-
 screen.mainloop()
+
 
